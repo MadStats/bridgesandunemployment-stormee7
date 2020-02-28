@@ -1,0 +1,95 @@
+---
+title: "Homework 2: Bridges and Unemployment"
+author: "Lucas Stormowski"
+date: "2/27/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
+```
+
+
+```{r}
+rm(list = ls())
+library(blscrapeR)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+df <- get_bls_county()
+WIunemployment = df %>% filter(fips_state == 55)
+bridges = read_csv("https://www.fhwa.dot.gov/bridge/nbi/2018/delimited/WI18.txt")
+bridges = bridges %>% 
+  group_by(COUNTY_CODE_003) %>% 
+  summarize(count = n(),deck = mean(as.numeric(DECK_COND_058), na.rm = T),
+            super = mean(as.numeric(SUPERSTRUCTURE_COND_059), na.rm=T),
+            sub = mean(as.numeric(SUBSTRUCTURE_COND_060), na.rm=T),
+            channel = mean(as.numeric(CHANNEL_COND_061), na.rm=T),   
+            culvert = mean(as.numeric(CULVERT_COND_062), na.rm=T),
+            average_daily_traffic = mean(as.numeric(ADT_029)),
+            max_daily_traffic = max(as.numeric(ADT_029)),
+            average_lanes_on = mean(as.numeric(TRAFFIC_LANES_ON_028A)),
+            max_lanes_on = mean(as.numeric(TRAFFIC_LANES_ON_028A)),
+            average_sidewalk = mean(as.numeric(LEFT_CURB_MT_050A)),
+            average_bridge_improvement_cost = mean(as.numeric(BRIDGE_IMP_COST_094)),
+            average_road_improvement_cost = mean(as.numeric(ROADWAY_IMP_COST_095))
+            ) %>% 
+  left_join(WIunemployment,by = c("COUNTY_CODE_003" = "fips_county")) 
+unemployed_model_using_average = lm(unemployed ~ average_daily_traffic + average_lanes_on + average_sidewalk + count, data=bridges)
+summary(unemployed_model_using_average)
+unemployed_model_using_max = lm(unemployed ~ max_daily_traffic + max_lanes_on + average_sidewalk + count, data=bridges)
+summary(unemployed_model_using_max)
+plot(unemployed_model_using_max)
+```
+For my model I have chosen to use the 4 variables daily lane traffic, lanes on the bridge, the total number of bridges and the average sidewalk width. For one model I use the max of the daily lane traffic and the max of the lanes on the bridge. In the other model I use the average instead. I wanted to see how these 2 models compared. The model that uses the max is a better indicator of the total of unemployed because of its higher R-value. Both max lanes and number of bridges are statistically significant. However, I have chosen to keep the average sidewalk and max daily traffic in the model for greater accuracy. If we look at the graph of the residuals we see that the model is not perfect, but for a model as elementary as this I believe our variables provide a good estimator of the total unemployed.
+```{r}
+rm(list = ls())
+unemployment_rate_model = lm(unemployed_rate ~ average_road_improvement_cost + average_bridge_improvement_cost + count + sub + super, data=bridges)
+summary(unemployment_rate_model_using_average)
+plot(unemployment_rate_model)
+
+
+```
+I have decided to use the variables average road improvement cost, average bridge improvement cost, the number of bridges, the condition of the substructure and the superstructure to predict my unemployment rate. The variables that are significant at 10% significance are the average road improvement cost, average bridge improvement cost and the total number of bridges in that county. I tried my model with all of the condition ratings, however, it appeared that the only relevant ones were the condition of the superstructure and substructure, hence why I kept them. Finally, looking at our residual plot it appears are residuals are normally distributed and our model does not skew any way. This linear model is not as strong as the one that predicts the total unemployed at an R-squared of 0.3255. This means our model is not the greatest predictor of unemployment rate but it is better than nothing. 
+```{r}
+rm(list = ls())
+dfNov <- get_bls_county("November 2019")
+WIunemploymentNov = df %>% filter(fips_state == 55)
+
+WIunemploymentNov = WIunemploymentNov[,c(3,8,9)]
+
+bridges_with_nov = WIunemploymentNov %>% 
+  rename(unemployment_rate_nov = unemployed_rate)%>%
+  rename(county_nov = fips_county)%>%
+  rename(unemployed_nov = unemployed)%>%
+  left_join(bridges,by = c("county_nov" = "COUNTY_CODE_003"))
+
+```
+This combines Novembers unemployment rates and 
+```{r}
+rm(list = ls())
+
+
+
+```
+
+```{r}
+rm(list = ls())
+
+
+
+```
+
+```{r}
+rm(list = ls())
+
+
+
+```
+
+```{r}
+rm(list = ls())
+
+
+
+```
